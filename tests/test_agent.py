@@ -559,7 +559,7 @@ class NotesAreNotReachable(AgentTestCase):
 
     def test_arbitrary_fields_are_refused(self):
         self.unlocked()
-        for name in ("Notes", "TOTP", "otp", "notes", "Custom"):
+        for name in ("Notes", "otp", "notes", "Custom"):
             with self.subTest(field=name):
                 reply = self.ctl("insert", "/Plain", name)
                 self.assertFalse(reply.get("ok"), f"{name} was allowed")
@@ -568,6 +568,15 @@ class NotesAreNotReachable(AgentTestCase):
         self.unlocked()
         self.assertTrue(self.ctl("insert", "/Plain", "Password")["ok"])
         self.assertTrue(self.ctl("insert", "/Plain", "UserName")["ok"])
+
+    def test_totp_is_allowed_but_an_entry_without_one_pastes_nothing(self):
+        # The probe vault is built with keepassxc-cli, which cannot attach an
+        # otp attribute, so this entry has none: the request must fail, and no
+        # error text may reach the clipboard as if it were a code.
+        self.unlocked()
+        reply = self.ctl("insert", "/Plain", "TOTP")
+        self.assertFalse(reply.get("ok"))
+        self.assertNotIn("is not a field this agent will type", reply.get("error", ""))
 
     def test_no_reply_ever_carries_a_note(self):
         self.unlocked()

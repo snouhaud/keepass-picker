@@ -110,6 +110,7 @@ query shows the entries you use most, and every keystroke narrows the list.
 | `Enter` | Type the **password** into the window you came from |
 | `Shift+Enter` | Type the **username** |
 | `Ctrl+Enter` | Type **both** — username, Tab, password |
+| `Alt+Enter` | Type the current **TOTP code** (entry needs a TOTP set up in KeePassXC) |
 | `↑` `↓` / `Tab` `Shift+Tab` | Move through the results |
 | `Ctrl+U` | Open the entry's URL (`http`/`https` only) |
 | `Ctrl+L` | Lock the vault |
@@ -253,7 +254,7 @@ never a password.
 | `database` | `""` | Absolute path to the `.kdbx` |
 | `idle_timeout` | `900` | Seconds of inactivity before the vault re-locks; `0` disables |
 | `search_notes` | `true` | `false` drops hits that matched only in the notes |
-| `allowed_fields` | `["UserName", "Password"]` | The only fields the agent will fetch and type |
+| `allowed_fields` | `["UserName", "Password", "TOTP"]` | The only fields the agent will fetch and type. `TOTP` is read with `show -t` and only a 6–8 digit (or Steam) code is ever pasted. A config saved earlier keeps its old list: add `TOTP` by hand |
 | `frecency` | `true` | Remember what you use, to order what you see |
 | `max_results` | `60` | Applied after ranking, never before |
 | `paste_key` | `"shift+Insert"` | What is pressed to paste; terminals usually want `ctrl+shift+v` |
