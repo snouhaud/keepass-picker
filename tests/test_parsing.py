@@ -193,6 +193,24 @@ class FillSequences(unittest.TestCase):
                          [("field", "UserName"), ("key", "Tab"),
                           ("field", "Password")])
 
+    def test_totp_is_a_field_token(self):
+        self.assertEqual(ka.parse_sequence("{PASSWORD}{TAB}{TOTP}")[-1], ("field", "TOTP"))
+
+    def test_totp_codes_are_validated_before_they_can_be_pasted(self):
+        class Stub(ka.Vault):
+            def __init__(self, out):
+                self.out = out
+            def run(self, command):
+                self.command = command
+                return self.out
+        for good in ("123456", "12345678", "7K2QX"):
+            self.assertEqual(Stub([good]).totp("/e"), good)
+        for bad in ([], [""], ["ERROR: no TOTP"], ["12345"], ["123456", "789012"],
+                    ["Entry with path /e has no TOTP set up"]):
+            with self.subTest(out=bad), self.assertRaises(ka.LockedError):
+                Stub(bad).totp("/e")
+        self.assertEqual(Stub(["123456"]).totp("/a b").__class__, str)
+
     def test_enter_is_supported(self):
         self.assertEqual(ka.parse_sequence("{PASSWORD}{ENTER}")[-1], ("key", "Return"))
 

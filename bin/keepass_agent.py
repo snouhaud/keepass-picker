@@ -56,7 +56,8 @@ DEFAULTS = {
     # Fields a caller may have fetched and typed. Notes are deliberately NOT
     # here: they hold PINs, PUKs, API keys and recovery codes, and nothing in
     # the picker's UI ever asks for them. Widen it only if you mean to.
-    "allowed_fields": ["UserName", "Password"],
+    # TOTP is a pseudo-field: it is fetched with `show -t`, never as an attribute.
+    "allowed_fields": ["UserName", "Password", "TOTP"],
     # keepassxc-cli's search covers notes and cannot be told not to. This
     # cannot un-search them, but it drops the results, so nothing over the
     # socket ever confirms that a string appears in a note.
@@ -420,6 +421,23 @@ class Vault:
             # only ever have shown the first line. Refuse rather than diverge.
             raise LockedError(f"{name} spans several lines; refusing to type it")
         return value
+
+    def totp(self, entry):
+        """The entry's current TOTP code, via `show -t`. Yields a secret."""
+        out = self.run(f"show -t -- {kpquote(entry)}")
+        for ln in out:
+            if "Could not find entry with path" in ln:
+                raise LockedError(f"no such entry: {entry}")
+        value = "\n".join(out).strip("\n")
+        # An entry without TOTP answers with an error line, not a code.
+        if not TOTP_RE.fullmatch(value):
+            raise LockedError("that entry has no usable TOTP")
+        return value
+
+
+# A current TOTP code: 6-8 digits, or Steam Guard's 5 characters. Anything else
+# (an error message, an empty line) must never be pasted as if it were a code.
+TOTP_RE = re.compile(r"[0-9]{6,8}|[23456789BCDFGHJKMNPQRTVWXY]{5}")
 
 
 INJECTION_RE = re.compile(r"[\r\n\x00]")
@@ -879,7 +897,7 @@ def system_binary(name):
 SEQUENCE_RE = re.compile(r"\{([A-Z]+)\}")
 
 FILL_KEYS = {"TAB": "Tab", "ENTER": "Return"}
-FILL_FIELDS = {"USERNAME": "UserName", "PASSWORD": "Password"}
+FILL_FIELDS = {"USERNAME": "UserName", "PASSWORD": "Password", "TOTP": "TOTP"}
 
 
 def parse_sequence(text):
@@ -1177,7 +1195,10 @@ class Agent:
                 time.sleep(float(self.cfg.get("fill_step_delay", 0.12)))
                 continue
 
-            secret = self.vault.field(entry, value)
+            if value == "TOTP":
+                secret = self.vault.totp(entry)
+            else:
+                secret = self.vault.field(entry, value)
             self.touch()
             if not secret:
                 if not delivered_any:

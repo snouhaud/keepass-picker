@@ -551,6 +551,7 @@ Item {
     return [{ name: "Enter",      what: "password" },
             { name: "Shift+Enter", what: "username" },
             { name: "Ctrl+Enter",  what: "both" },
+            { name: "Alt+Enter",   what: "TOTP" },
             { name: "Ctrl+L",      what: "lock" }]
   }
 
@@ -683,6 +684,7 @@ Item {
             // same rule in every window.
             if (event.modifiers & Qt.ControlModifier) root.deliver("fill")
             else if (event.modifiers & Qt.ShiftModifier) root.deliver("insert", "UserName")
+            else if (event.modifiers & Qt.AltModifier) root.deliver("insert", "TOTP")
             else root.activate()
             event.accepted = true
           } else if (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) {
