@@ -277,10 +277,16 @@ class Vault:
         master, slave = pty.openpty()
         # A wide pty keeps readline from redisplaying long input across lines.
         fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 50, 4096, 0, 0))
+        # Every check on the cli's answers matches its English messages ("Could
+        # not find entry with path", "Error ..."). keepassxc-cli translates
+        # them, so on a French desktop a missing entry answered "Impossible de
+        # trouver l'entrée..." and that sentence was taken for the password.
+        # Pin the language; C.UTF-8 keeps entry names in UTF-8.
+        env = dict(os.environ, LC_ALL="C.UTF-8", LANGUAGE="en")
         self.proc = subprocess.Popen(
             [cli, "open", self.database],
             stdin=slave, stdout=slave, stderr=slave,
-            close_fds=True, start_new_session=True,
+            close_fds=True, start_new_session=True, env=env,
         )
         os.close(slave)
         self.master = master
